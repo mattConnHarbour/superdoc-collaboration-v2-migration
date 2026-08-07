@@ -24,11 +24,12 @@ pnpm install
 pnpm dev
 ```
 
-Open <http://localhost:3100>. API is on 3101 and Hocuspocus is on 1235.
+Open <http://localhost:3100>. The API and Hocuspocus share port 3101.
 
 For deployment, set `VITE_COLLAB_URL` to the public `wss://` collaboration URL
-used by browsers. Set `COLLAB_URL` to the WebSocket URL reachable by the server
-for server-side DOCX export. See `.env.example` for local defaults.
+used by browsers and `VITE_API_URL` to its `https://` API origin. Set
+`COLLAB_URL` to the WebSocket URL reachable by the server for server-side DOCX
+export. See `.env.example` for local defaults.
 
 All room state and DOCX data are intentionally stored in memory and disappear
 when the server stops.

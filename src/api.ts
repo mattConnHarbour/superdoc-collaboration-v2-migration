@@ -17,7 +17,8 @@ async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
 
 // Asks the server to freeze and export a V1 room for migration.
 export const migrateRoom = (documentId: string) =>
-  request<RoomStatus>(`/api/rooms/${documentId}/migrate`, { method: 'POST' });
+  request<RoomStatus>(`${API_URL}/api/rooms/${documentId}/migrate`, { method: 'POST' });
 // Tells the server that V2 seeding finished and routing can be activated.
 export const completeMigration = (documentId: string) =>
-  request<RoomStatus>(`/api/rooms/${documentId}/complete`, { method: 'POST' });
+  request<RoomStatus>(`${API_URL}/api/rooms/${documentId}/complete`, { method: 'POST' });
+import { API_URL } from './config';

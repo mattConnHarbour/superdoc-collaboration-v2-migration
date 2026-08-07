@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SuperDoc } from 'superdoc';
-import { COLLAB_URL } from './config';
+import { API_URL, COLLAB_URL } from './config';
 import { statusMessages } from './status-messages';
 
 // Creates a versioned SuperDoc V2 room or opens it after migration.
@@ -39,7 +39,7 @@ export function V2Room({
       document: {
         id: roomId,
         type: 'docx',
-        url: `/api/rooms/${documentId}/migrate`,
+        url: `${API_URL}/api/rooms/${documentId}/migrate`,
         v2Collaboration: {
           providerType: 'hocuspocus',
           documentId: roomId,

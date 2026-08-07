@@ -1,21 +1,20 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { Server } from '@hocuspocus/server';
+import { WebSocketServer } from 'ws';
 import * as Y from 'yjs';
 import { createRoomContext, RoomMigrationService } from './room-migration-service.js';
 import { registerRoomRoutes } from './routes.js';
 import { getDemoRoom } from './room-store.js';
 
-const API_PORT = Number(process.env.API_PORT ?? 3101);
-const COLLAB_PORT = Number(process.env.COLLAB_PORT ?? 1235);
-const COLLAB_URL = process.env.COLLAB_URL ?? `ws://127.0.0.1:${COLLAB_PORT}`;
+const PORT = Number(process.env.PORT ?? process.env.API_PORT ?? 3101);
+const COLLAB_URL = process.env.COLLAB_URL ?? `ws://127.0.0.1:${PORT}`;
 const snapshots = new Map<string, Uint8Array>();
 const knownDocumentIds = new Set<string>();
 const pendingMigrations = new Map<string, ReturnType<typeof createRoomContext>>();
 const V2_ROOT_MAPS = ['capabilities', 'checkpoints', 'content', 'journal-capability', 'meta', 'operations', 'package', 'shards'] as const;
 
 const collaboration = Server.configure({
-  port: COLLAB_PORT,
   yDocOptions: { gc: false, gcFilter: () => true },
   debounce: 100,
   maxDebounce: 500,
@@ -51,7 +50,13 @@ const migration = new RoomMigrationService();
 
 const app = Fastify({ logger: true });
 await app.register(cors, { origin: true });
+app.get('/health', async () => ({ ok: true }));
 registerRoomRoutes(app, { collaboration, collaborationUrl: COLLAB_URL, migration, knownDocumentIds, pendingMigrations });
 
-await app.listen({ port: API_PORT, host: '0.0.0.0' });
-collaboration.listen();
+const webSockets = new WebSocketServer({ server: app.server });
+webSockets.on('connection', (socket, request) => {
+  socket.on('error', (error) => app.log.error(error));
+  collaboration.handleConnection(socket, request);
+});
+
+await app.listen({ port: PORT, host: '0.0.0.0' });
