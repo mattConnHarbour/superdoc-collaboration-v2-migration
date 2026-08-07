@@ -9,11 +9,12 @@ interface RouteDependencies {
   migration: RoomMigrationService;
   knownDocumentIds: Set<string>;
   pendingMigrations: Map<string, RoomContext>;
+  keepV2RoomAlive: (roomId: string) => Promise<void>;
 }
 
 // Registers the minimal HTTP endpoints used to prepare and complete migrations.
 export function registerRoomRoutes(app: FastifyInstance, dependencies: RouteDependencies) {
-  const { collaboration, collaborationUrl, migration, knownDocumentIds, pendingMigrations } = dependencies;
+  const { collaboration, collaborationUrl, migration, knownDocumentIds, pendingMigrations, keepV2RoomAlive } = dependencies;
 
   app.get<{ Params: { documentId: string } }>('/api/rooms/:documentId/migrate', async (request, reply) => {
     const docx = getDemoRoom(request.params.documentId)?.migrationDocx;
@@ -46,6 +47,7 @@ export function registerRoomRoutes(app: FastifyInstance, dependencies: RouteDepe
     if (!roomContext) return reply.code(404).send({ message: 'Migration not found' });
 
     try {
+      await keepV2RoomAlive(roomContext.targetRoomId);
       await migration.completeMigration(roomContext);
       pendingMigrations.delete(request.params.documentId);
       return reply.send(publicRoom(roomContext.room));

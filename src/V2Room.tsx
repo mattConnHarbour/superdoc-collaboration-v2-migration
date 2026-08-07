@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { SuperDoc } from 'superdoc';
+import { BlankDOCX, SuperDoc } from 'superdoc';
 import { API_URL, COLLAB_URL } from './config';
 import { statusMessages } from './status-messages';
 
@@ -39,7 +39,7 @@ export function V2Room({
       document: {
         id: roomId,
         type: 'docx',
-        ...(mode === 'create' ? { url: `${API_URL}/api/rooms/${documentId}/migrate` } : {}),
+        url: mode === 'create' ? `${API_URL}/api/rooms/${documentId}/migrate` : BlankDOCX,
         v2Collaboration: {
           providerType: 'hocuspocus',
           documentId: roomId,
