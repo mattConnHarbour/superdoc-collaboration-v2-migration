@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SuperDoc } from 'superdoc';
+import { COLLAB_URL } from './config';
 import { statusMessages } from './status-messages';
 
-const WS_URL = import.meta.env.VITE_COLLAB_URL ?? 'ws://127.0.0.1:1234';
-
+// Creates a versioned SuperDoc V2 room or opens it after migration.
 export function V2Room({
   documentId,
   roomId,
@@ -24,10 +24,12 @@ export function V2Room({
   const [actionsRoot, setActionsRoot] = useState<HTMLElement | null>(null);
   onReadyRef.current = onReady;
 
+  // Finds the top-bar portal target after the application mounts.
   useEffect(() => {
     setActionsRoot(document.getElementById('document-actions'));
   }, []);
 
+  // Creates SuperDoc and connects it to the versioned V2 collaboration room.
   useEffect(() => {
     statusMessages.message(mode === 'create' ? 'V2 room DOCX retrieval' : 'V2 room opening');
     statusMessages.message('V2 room connecting');
@@ -37,11 +39,11 @@ export function V2Room({
       document: {
         id: roomId,
         type: 'docx',
-        url: `/api/rooms/${documentId}/migration.docx`,
+        url: `/api/rooms/${documentId}/migrate`,
         v2Collaboration: {
           providerType: 'hocuspocus',
           documentId: roomId,
-          serverUrl: WS_URL,
+          serverUrl: COLLAB_URL,
           token: 'demo',
           roomMode: mode,
         },

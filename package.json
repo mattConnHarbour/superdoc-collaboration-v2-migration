@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.25.0",
   "scripts": {
     "dev": "concurrently -k -n CLIENT,SERVER -c cyan,green \"pnpm run dev:client\" \"pnpm run dev:server\"",
-    "dev:client": "VITE_COLLAB_URL=ws://127.0.0.1:1235 vite --port 3100 --strictPort",
+    "dev:client": "vite --port 3100 --strictPort",
     "dev:server": "tsx server/index.ts",
     "build": "tsc --noEmit && vite build"
   },

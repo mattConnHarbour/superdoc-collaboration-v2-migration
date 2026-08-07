@@ -13,6 +13,7 @@ export interface DemoRoom {
 
 const rooms = new Map<string, DemoRoom>();
 
+// Creates and stores a new in-memory room record for the demo.
 export function createDemoRoom(documentId = randomUUID().slice(0, 8)): DemoRoom {
   const room: DemoRoom = {
     documentId,
@@ -28,8 +29,10 @@ export function createDemoRoom(documentId = randomUUID().slice(0, 8)): DemoRoom 
   return room;
 }
 
+// Returns an in-memory room by its public document identifier.
 export const getDemoRoom = (documentId: string) => rooms.get(documentId);
 
+// Removes internal migration fields before returning a room to the client.
 export function publicRoom(room: DemoRoom) {
   return {
     documentId: room.documentId,

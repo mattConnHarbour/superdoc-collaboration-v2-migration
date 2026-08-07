@@ -1,12 +1,14 @@
 import { useSyncExternalStore } from 'react';
 import { statusMessages } from './status-messages';
 
+// Maps each status message to the dot color shown in the activity panel.
 function entryKind(message: string) {
   if (message.startsWith('Click ')) return 'prompt';
-  if (/migration|frozen|DOCX|seeder|joiner|seeded|activating/.test(message)) return 'migration';
+  if (/migration|frozen|DOCX|seeded|activating/.test(message)) return 'migration';
   return message.startsWith('V2') ? 'v2' : 'v1';
 }
 
+// Renders migration activity from the central messaging controller.
 export function StatusPanel() {
   const entries = useSyncExternalStore(statusMessages.subscribe, statusMessages.getSnapshot);
   return (

@@ -4,10 +4,10 @@ import { HocuspocusProvider } from '@hocuspocus/provider';
 import { SuperDoc } from 'superdoc-v1';
 import { BLANK_DOCX_BASE64 } from 'superdoc-v1/super-editor';
 import * as Y from 'yjs';
+import { COLLAB_URL } from './config';
 import { statusMessages } from './status-messages';
 
-const WS_URL = import.meta.env.VITE_COLLAB_URL ?? 'ws://127.0.0.1:1234';
-
+// Hosts the editable or archived SuperDoc V1 collaboration room.
 export function V1Room({ roomId, readOnly, blank }: {
   roomId: string;
   readOnly: boolean;
@@ -23,7 +23,7 @@ export function V1Room({ roomId, readOnly, blank }: {
   const collaboration = useMemo(() => {
     const ydoc = new Y.Doc();
     const provider = new HocuspocusProvider({
-      url: WS_URL,
+      url: COLLAB_URL,
       name: roomId,
       document: ydoc,
       connect: false,
@@ -43,10 +43,12 @@ export function V1Room({ roomId, readOnly, blank }: {
     return { ydoc, provider };
   }, [roomId]);
 
+  // Finds the top-bar portal target after the application mounts.
   useEffect(() => {
     setActionsRoot(document.getElementById('document-actions'));
   }, []);
 
+  // Connects the Yjs provider and reports its synchronization state.
   useEffect(() => {
     statusMessages.message('V1 room connecting');
     const onSynced = () => setSynced(true);
@@ -62,6 +64,7 @@ export function V1Room({ roomId, readOnly, blank }: {
     };
   }, [collaboration]);
 
+  // Loads either the blank template or the demo seed DOCX.
   useEffect(() => {
     if (blank) {
       const bytes = Uint8Array.from(atob(BLANK_DOCX_BASE64), (character) => character.charCodeAt(0));
@@ -84,6 +87,7 @@ export function V1Room({ roomId, readOnly, blank }: {
     };
   }, [blank]);
 
+  // Creates SuperDoc after both collaboration state and the seed file are ready.
   useEffect(() => {
     if (!synced || !seedFile) return;
     instance.current = new SuperDoc({

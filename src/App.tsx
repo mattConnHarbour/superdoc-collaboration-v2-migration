@@ -7,11 +7,13 @@ import { statusMessages } from './status-messages';
 
 type Route = { version: 'v1' | 'v2'; documentId: string | null };
 
+// Parses the selected room version and document ID from the browser URL.
 function readRoute(): Route {
   const match = window.location.pathname.match(/^\/(v1|v2)\/([^/]+)$/);
   return match ? { version: match[1] as Route['version'], documentId: match[2] } : { version: 'v1', documentId: null };
 }
 
+// Coordinates navigation, migration requests, and the active room UI.
 export default function App() {
   const [route, setRoute] = useState<Route>(() => {
     const initial = readRoute();
@@ -32,12 +34,14 @@ export default function App() {
   const [migrating, setMigrating] = useState(false);
   const [blankV1, setBlankV1] = useState(false);
 
+  // Navigates to another room and starts its activity log from empty.
   const navigate = useCallback((version: Route['version'], documentId: string) => {
     statusMessages.clear();
     history.pushState({}, '', `/${version}/${documentId}`);
     setRoute({ version, documentId });
   }, []);
 
+  // Keeps application routing synchronized with browser back and forward actions.
   useEffect(() => {
     const onPopState = () => {
       statusMessages.clear();
@@ -47,10 +51,12 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
+  // Loads V2 styling only when a V2 room is displayed.
   useEffect(() => {
     if (route.version === 'v2') void import('superdoc/style.css');
   }, [route.version]);
 
+  // Starts migration preparation and updates the room with its V2 target.
   const migrate = async () => {
     setMigrating(true);
     setError(null);
@@ -59,7 +65,6 @@ export default function App() {
       const nextRoom = await migrateRoom(room.documentId);
       statusMessages.message('V1 room frozen');
       statusMessages.message('V1 room DOCX exported');
-      statusMessages.message(nextRoom.role === 'seeder' ? 'V2 room seeder selected' : 'V2 room joiner selected');
       setRoom(nextRoom);
     } catch (reason) {
       statusMessages.message('V1 room migration failed');
@@ -69,6 +74,7 @@ export default function App() {
     }
   };
 
+  // Creates and navigates to a new blank V1 collaboration room.
   const newBlankV1Room = () => {
     const documentId = crypto.randomUUID().slice(0, 8);
     setRoom({

@@ -7,10 +7,7 @@ export interface RoomStatus {
   v1Archived: boolean;
 }
 
-export interface MigrationResponse extends RoomStatus {
-  role: 'seeder' | 'joiner';
-}
-
+// Sends an API request and converts unsuccessful responses into errors.
 async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   const response = await fetch(input, init);
   const body = (await response.json()) as T & { message?: string };
@@ -18,7 +15,9 @@ async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   return body;
 }
 
+// Asks the server to freeze and export a V1 room for migration.
 export const migrateRoom = (documentId: string) =>
-  request<MigrationResponse>(`/api/rooms/${documentId}/migrate`, { method: 'POST' });
+  request<RoomStatus>(`/api/rooms/${documentId}/migrate`, { method: 'POST' });
+// Tells the server that V2 seeding finished and routing can be activated.
 export const completeMigration = (documentId: string) =>
   request<RoomStatus>(`/api/rooms/${documentId}/complete`, { method: 'POST' });
