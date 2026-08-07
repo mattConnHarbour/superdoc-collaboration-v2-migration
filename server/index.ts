@@ -36,6 +36,10 @@ const collaboration = Server.configure({
   async onChange({ documentName, document }) {
     snapshots.set(documentName, Y.encodeStateAsUpdate(document));
   },
+  // Captures a final snapshot before the last connection releases a room.
+  async onStoreDocument({ documentName, document }) {
+    snapshots.set(documentName, Y.encodeStateAsUpdate(document));
+  },
 });
 
 // Iterates over room records known to the collaboration server.

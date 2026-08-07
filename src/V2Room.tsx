@@ -39,7 +39,7 @@ export function V2Room({
       document: {
         id: roomId,
         type: 'docx',
-        url: `${API_URL}/api/rooms/${documentId}/migrate`,
+        ...(mode === 'create' ? { url: `${API_URL}/api/rooms/${documentId}/migrate` } : {}),
         v2Collaboration: {
           providerType: 'hocuspocus',
           documentId: roomId,
