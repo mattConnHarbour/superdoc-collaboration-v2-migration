@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { completeMigration, migrateRoom, type RoomStatus } from './api';
 import { V1Room } from './V1Room';
 import { V2Room } from './V2Room';
@@ -33,6 +33,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [migrating, setMigrating] = useState(false);
   const [blankV1, setBlankV1] = useState(false);
+  const migrationStartedHere = useRef(false);
 
   // Navigates to another room and starts its activity log from empty.
   const navigate = useCallback((version: Route['version'], documentId: string) => {
@@ -58,6 +59,7 @@ export default function App() {
 
   // Starts migration preparation and updates the room with its V2 target.
   const migrate = async () => {
+    migrationStartedHere.current = true;
     setMigrating(true);
     setError(null);
     statusMessages.message('V1 room migration started');
@@ -70,6 +72,7 @@ export default function App() {
       statusMessages.message('V1 room migration failed');
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
+      migrationStartedHere.current = false;
       setMigrating(false);
     }
   };
@@ -89,6 +92,22 @@ export default function App() {
     setError(null);
     navigate('v1', documentId);
   };
+
+  // Disables V1 controls when another connected user starts migration.
+  const handleFrozen = useCallback(() => {
+    if (!migrationStartedHere.current) statusMessages.message('V1 room migration started by other user');
+    setRoom((current) => ({ ...current, status: 'migrating' }));
+  }, []);
+
+  // Applies the completed migration announced by the collaboration server.
+  const handleMigrationReady = useCallback((targetRoomId: string) => {
+    setRoom((current) => ({
+      ...current,
+      targetRoomId,
+      status: 'migrated',
+      v1Archived: true,
+    }));
+  }, []);
 
   const isV1 = route.version === 'v1';
   return (
@@ -117,17 +136,18 @@ export default function App() {
         </div>
       </header>
 
-      <div className={`notice ${room.status}`}>
-        {room.status === 'editing-v1' && 'This is a live v1 room. Edit the document, then migrate it.'}
-        {room.status === 'migrating' && 'Writers are frozen while the server snapshots, converts, seeds, and validates v2.'}
-        {room.status === 'seeding-v2' && 'Creating the versioned v2 room from the exported DOCX.'}
-        {room.status === 'migrated' && isV1 && 'Archived v1 room — the original state persists and is now read-only.'}
-        {room.status === 'migrated' && !isV1 && 'Live v2 room — created from the frozen v1 collaboration state.'}
-      </div>
       {error && <div className="error">{error}</div>}
       <main className="editor-shell">
         {isV1 ? (
-          <V1Room key={room.sourceRoomId} roomId={room.sourceRoomId} readOnly={room.status !== 'editing-v1'} blank={blankV1} />
+          <V1Room
+            key={room.sourceRoomId}
+            roomId={room.sourceRoomId}
+            readOnly={room.status !== 'editing-v1'}
+            blank={blankV1}
+            canNavigateToV2={Boolean(room.targetRoomId)}
+            onFrozen={handleFrozen}
+            onMigrationReady={handleMigrationReady}
+          />
         ) : room.targetRoomId ? (
           <V2Room
             key={`${room.targetRoomId}-${room.status}`}

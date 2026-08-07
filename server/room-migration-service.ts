@@ -7,7 +7,7 @@ import type { DemoRoom } from './room-store.js';
 export interface RoomContext {
   room: DemoRoom;
   collaborationUrl: string;
-  broadcastViewOnly: (roomId: string) => void;
+  broadcastStateless: (roomId: string, payload: string) => void;
   closeWriters: () => void;
   targetRoomId: string;
   docxBackup?: Uint8Array;
@@ -17,13 +17,13 @@ export interface RoomContext {
 export function createRoomContext(
   room: DemoRoom,
   collaborationUrl: string,
-  broadcastViewOnly: (roomId: string) => void,
+  broadcastStateless: (roomId: string, payload: string) => void,
   closeWriters: () => void,
 ): RoomContext {
   return {
     room,
     collaborationUrl,
-    broadcastViewOnly,
+    broadcastStateless,
     closeWriters,
     targetRoomId: `${room.documentId}-v2`,
   };
@@ -61,6 +61,10 @@ export class RoomMigrationService {
     try {
       await this.run('activate', this.activateRoom, context);
       await this.run('archive', this.archiveRoom, context);
+      context.broadcastStateless(context.room.sourceRoomId, JSON.stringify({
+        type: 'room-migration-ready',
+        targetRoomId: context.targetRoomId,
+      }));
     } catch (error) {
       context.room.status = 'editing-v1';
       throw error;
@@ -69,7 +73,7 @@ export class RoomMigrationService {
 
   // Makes the source room read-only and disconnects its active writers.
   private freezeRoom = async (context: RoomContext) => {
-    context.broadcastViewOnly(context.room.sourceRoomId);
+    context.broadcastStateless(context.room.sourceRoomId, '{"type":"room-view-only"}');
     context.closeWriters();
   };
 

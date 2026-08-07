@@ -8,15 +8,19 @@ import { COLLAB_URL } from './config';
 import { statusMessages } from './status-messages';
 
 // Hosts the editable or archived SuperDoc V1 collaboration room.
-export function V1Room({ roomId, readOnly, blank }: {
+export function V1Room({ roomId, readOnly, blank, canNavigateToV2, onFrozen, onMigrationReady }: {
   roomId: string;
   readOnly: boolean;
   blank?: boolean;
+  canNavigateToV2?: boolean;
+  onFrozen?: () => void;
+  onMigrationReady?: (targetRoomId: string) => void;
 }) {
   const [synced, setSynced] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
   const [seedFile, setSeedFile] = useState<File | null>(null);
   const [replacing, setReplacing] = useState(false);
+  const [frozen, setFrozen] = useState(readOnly);
   const [actionsRoot, setActionsRoot] = useState<HTMLElement | null>(null);
   const instance = useRef<SuperDoc | null>(null);
   const uploadInput = useRef<HTMLInputElement | null>(null);
@@ -29,11 +33,17 @@ export function V1Room({ roomId, readOnly, blank }: {
       connect: false,
       onStateless: ({ payload }) => {
         try {
-          const message = JSON.parse(payload) as { type?: string };
+          const message = JSON.parse(payload) as { type?: string; targetRoomId?: string };
           if (message.type === 'room-view-only') {
+            setFrozen(true);
             instance.current?.setLocked(true);
             instance.current?.setDocumentMode('viewing');
             statusMessages.message('V1 room read-only');
+            onFrozen?.();
+          }
+          if (message.type === 'room-migration-ready' && message.targetRoomId) {
+            statusMessages.message('V2 room migration ready');
+            onMigrationReady?.(message.targetRoomId);
           }
         } catch {
           // Ignore unrelated stateless messages.
@@ -41,7 +51,7 @@ export function V1Room({ roomId, readOnly, blank }: {
       },
     });
     return { ydoc, provider };
-  }, [roomId]);
+  }, [onFrozen, onMigrationReady, roomId]);
 
   // Finds the top-bar portal target after the application mounts.
   useEffect(() => {
@@ -109,7 +119,7 @@ export function V1Room({ roomId, readOnly, blank }: {
         setEditorReady(true);
         if (readOnly) {
           statusMessages.message('V1 room opened read-only');
-          statusMessages.message('Click "Go to V2 room"');
+          if (canNavigateToV2) statusMessages.message('Click "Go to V2 room"');
         } else {
           statusMessages.message('V1 room editor ready');
         }
@@ -119,7 +129,7 @@ export function V1Room({ roomId, readOnly, blank }: {
       instance.current?.destroy();
       instance.current = null;
     };
-  }, [collaboration, readOnly, seedFile, synced]);
+  }, [canNavigateToV2, collaboration, readOnly, seedFile, synced]);
 
   if (!synced || !seedFile) return <div className="centered">Connecting to v1 room…</div>;
   return (
@@ -128,7 +138,7 @@ export function V1Room({ roomId, readOnly, blank }: {
         <span>{replacing ? 'Replacing document…' : editorReady ? 'V1 editor ready' : 'Opening v1 document…'}</span>
       </div>
       {actionsRoot && createPortal(<div className="document-controls">
-        {!readOnly && <button onClick={() => uploadInput.current?.click()}>Upload DOCX</button>}
+        <button disabled={readOnly || frozen} onClick={() => uploadInput.current?.click()}>Upload DOCX</button>
         <button onClick={() => void instance.current?.export({ exportedName: 'v1-room', triggerDownload: true })}>Export DOCX</button>
         <input
           ref={uploadInput}

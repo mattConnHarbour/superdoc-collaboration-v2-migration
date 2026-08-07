@@ -27,7 +27,7 @@ export function registerRoomRoutes(app: FastifyInstance, dependencies: RouteDepe
     const roomContext = createRoomContext(
       room,
       collaborationUrl,
-      (roomId) => collaboration.documents.get(roomId)?.broadcastStateless('{"type":"room-view-only"}'),
+      (roomId, payload) => collaboration.documents.get(roomId)?.broadcastStateless(payload),
       () => collaboration.closeConnections(room.sourceRoomId),
     );
 
